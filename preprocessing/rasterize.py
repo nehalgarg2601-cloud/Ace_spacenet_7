@@ -141,4 +141,4 @@ if __name__ == "__main__":
 
             generate_fbc_mask(image_path, json_path, output_path)
 
-    print("✅ FBC masks generated.")
+    print("FBC masks generated.")
