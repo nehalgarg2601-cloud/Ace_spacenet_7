@@ -29,9 +29,11 @@ args = parser.parse_args()
 # Directories relative to this script
 THIS_DIR = os.path.dirname(__file__)
 CHECKPOINT_DIR = os.path.join(THIS_DIR, "checkpoints")
+WEIGHTS_DIR = os.path.join(THIS_DIR, "weights")
 SPLIT_DIR = os.path.join(THIS_DIR, "..", "splits")
 
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+os.makedirs(WEIGHTS_DIR, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,15 +54,15 @@ logging.info(f"Args: {args}")
 def get_device():
 
     if torch.backends.mps.is_available():
-        logging.info("🚀 Using Apple MPS")
+        logging.info("Using Apple MPS")
         return torch.device("mps")
 
     elif torch.cuda.is_available():
-        logging.info("🚀 Using CUDA")
+        logging.info("Using CUDA")
         return torch.device("cuda")
 
     else:
-        logging.info("💻 Using CPU")
+        logging.info("Using CPU")
         return torch.device("cpu")
 
 
@@ -152,10 +154,24 @@ def save_checkpoint(epoch, model, optimizer, scheduler, best_test_loss, is_best=
     latest_path = os.path.join(CHECKPOINT_DIR, "latest.pth")
     torch.save(checkpoint, latest_path)
 
+    # Save pure weights
+    weights_path = os.path.join(WEIGHTS_DIR, f"weights_{epoch}.pth")
+    
+    # Optional logic to remove the old single file
     if is_best:
         best_path = os.path.join(CHECKPOINT_DIR, "best.pth")
         torch.save(checkpoint, best_path)
         logging.info(f" ⭐ Best checkpoint saved: {best_path}")
+
+    import glob
+    for old_file in glob.glob(os.path.join(WEIGHTS_DIR, "weights_*.pth")):
+        try:
+            os.remove(old_file)
+        except OSError:
+            pass
+
+    torch.save(model.state_dict(), weights_path)
+    logging.info(f" Weights saved: {weights_path}")
 
     logging.info(f" Checkpoint saved: {epoch_path}")
 
