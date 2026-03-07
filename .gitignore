@@ -22,4 +22,3 @@ __pycache__/
 
 /data/
 /train/checkpoints/
-/samples_predictions/
