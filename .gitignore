@@ -1,2 +1,4 @@
 /data
 /train/checkpoints
+/spacenet/Final_sol/train/__pycache__
+spacenet/Final_sol/models/__pycache__

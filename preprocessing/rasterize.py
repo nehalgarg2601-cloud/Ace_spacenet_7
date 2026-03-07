@@ -9,11 +9,14 @@ from scipy.ndimage import binary_dilation, binary_erosion
 
 
 def get_device():
-    if torch.backends.mps.is_available():
-        print("🚀 Using MPS")
+    if torch.cuda.is_available():
+        print("Using CUDA")
+        return torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        print("Using MPS")
         return torch.device("mps")
     else:
-        print("💻 Using CPU")
+        print("Using CPU")
         return torch.device("cpu")
 
 
@@ -30,7 +33,7 @@ def generate_fbc_mask(image_path, geojson_path, output_path):
     try:
         gdf = gpd.read_file(geojson_path)
     except Exception as e:
-        print(f"⚠️  Failed to read geojson {geojson_path}: {e}")
+        print(f"Failed to read geojson {geojson_path}: {e}")
         gdf = gpd.GeoDataFrame(geometry=[])
 
     if gdf.empty or "geometry" not in gdf or gdf.geometry.isna().all():
@@ -61,7 +64,7 @@ def generate_fbc_mask(image_path, geojson_path, output_path):
             )
 
     # -------- Boundary --------
-    # Thin outline around buildings (rough analogue to solaris boundary channel)
+    # Thin outline around buildings 
     dilated = binary_dilation(footprint, iterations=1)
     eroded = binary_erosion(footprint, iterations=1)
     boundary = (dilated ^ eroded).astype(np.uint8)
@@ -117,7 +120,7 @@ if __name__ == "__main__":
         image_dir = os.path.join(aoi_path, "images")
         label_dir = os.path.join(aoi_path, "labels_match")
 
-        # 🔥 New raster folder
+        # New raster folder
         raster_dir = os.path.join(aoi_path, "labels_rasterized")
         os.makedirs(raster_dir, exist_ok=True)
 
