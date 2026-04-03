@@ -1,4 +1,4 @@
-# SpaceNet 7 Building Segmentation usng HRNet-W48
+# SpaceNet 7 Building Segmentation using HRNet-W48
 
 The SpaceNet 7 dataset contains multi-temporal satellite imagery with building footprint annotations across varying conditions. This project focuses on **detecting building footprints from satellite images** using a deep learning-based segmentation model.
 
