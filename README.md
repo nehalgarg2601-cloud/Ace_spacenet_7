@@ -24,15 +24,15 @@ Below are sample predictions from the model:
 
 ### Example 1
 
-![Example 1](samples_predictions/chunks/samples_predictions/chunks/10_global_monthly_2019_09_mosaic_L15-0357E-1223N_1429_3296_13_00512_01024.png)
+![Example 1](samples_predictions/chunks/10_global_monthly_2019_09_mosaic_L15-0357E-1223N_1429_3296_13_00512_01024.png)
 
 ### Example 2
 
-![Example 2](samples_predictions/chunks/samples_predictions/chunks/14_global_monthly_2018_01_mosaic_L15-0586E-1127N_2345_3680_13_01536_02560.png)
+![Example 2](samples_predictions/chunks/14_global_monthly_2018_01_mosaic_L15-0586E-1127N_2345_3680_13_01536_02560.png)
 
 ### Example 3
 
-![Example 3](samples_predictions/chunks/samples_predictions/chunks/3_global_monthly_2019_02_mosaic_L15-0506E-1204N_2027_3374_13_00000_00000.png)
+![Example 3](samples_predictions/chunks/3_global_monthly_2019_02_mosaic_L15-0506E-1204N_2027_3374_13_00000_00000.png)
 
 Each example shows:
 
