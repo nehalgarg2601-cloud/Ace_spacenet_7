@@ -89,7 +89,7 @@ class Bottleneck(nn.Module):
 
 
 # --------------------------------------------------
-# HR Module
+# HR Module 
 # --------------------------------------------------
 
 class HRModule(nn.Module):
@@ -98,28 +98,84 @@ class HRModule(nn.Module):
 
         super().__init__()
 
+        self.num_branches = len(channels)
+        self.channels = channels
+
         self.branches = nn.ModuleList()
 
         for c in channels:
-
             block = nn.Sequential(
                 BasicBlock(c, c),
                 BasicBlock(c, c),
                 BasicBlock(c, c),
                 BasicBlock(c, c)
             )
-
             self.branches.append(block)
+
+        #  Fusion layers
+        self.fuse_layers = nn.ModuleList()
+
+        for i in range(self.num_branches):
+            fuse_layer = nn.ModuleList()
+            for j in range(self.num_branches):
+
+                if i == j:
+                    fuse_layer.append(nn.Identity())
+
+                elif j > i:
+                    # Upsample
+                    fuse_layer.append(nn.Sequential(
+                        nn.Conv2d(channels[j], channels[i], 1, bias=False),
+                        nn.BatchNorm2d(channels[i])
+                    ))
+
+                else:
+                    # Downsample
+                    ops = []
+                    in_ch = channels[j]
+                    for k in range(i - j):
+                        out_ch = channels[i] if k == i - j - 1 else in_ch
+                        ops.append(nn.Sequential(
+                            nn.Conv2d(in_ch, out_ch, 3, stride=2, padding=1, bias=False),
+                            nn.BatchNorm2d(out_ch),
+                            nn.ReLU(inplace=True)
+                        ))
+                        in_ch = out_ch
+                    fuse_layer.append(nn.Sequential(*ops))
+
+            self.fuse_layers.append(fuse_layer)
+
+        self.relu = nn.ReLU(inplace=True)
 
 
     def forward(self, xs):
 
-        outputs = []
+        # Process branches
+        xs = [branch(x) for branch, x in zip(self.branches, xs)]
 
-        for i, branch in enumerate(self.branches):
-            outputs.append(branch(xs[i]))
+        fused = []
 
-        return outputs
+        for i in range(self.num_branches):
+            y = 0
+            for j in range(self.num_branches):
+
+                x = xs[j]
+
+                if i == j:
+                    y = y + x
+
+                elif j > i:
+                    x = self.fuse_layers[i][j](x)
+                    x = F.interpolate(x, size=xs[i].shape[2:], mode="bilinear", align_corners=False)
+                    y = y + x
+
+                else:
+                    x = self.fuse_layers[i][j](x)
+                    y = y + x
+
+            fused.append(self.relu(y))
+
+        return fused
 
 
 # --------------------------------------------------
@@ -142,7 +198,7 @@ class HRNetW48(nn.Module):
 
         self.relu = nn.ReLU(inplace=True)
 
-        # Stage1 (Bottleneck blocks)
+        # Stage1
 
         self.layer1 = nn.Sequential(
             Bottleneck(64, 64),
@@ -151,10 +207,14 @@ class HRNetW48(nn.Module):
             Bottleneck(256, 64)
         )
 
-        # Transition1
+        # Transition1 
 
         self.transition1 = nn.ModuleList([
-            nn.Conv2d(256, 48, 3, padding=1),
+            nn.Sequential(
+                nn.Conv2d(256, 48, 3, padding=1, bias=False),
+                nn.BatchNorm2d(48),
+                nn.ReLU(inplace=True)
+            ),
             nn.Sequential(
                 nn.Conv2d(256, 96, 3, stride=2, padding=1),
                 nn.BatchNorm2d(96),
@@ -178,7 +238,7 @@ class HRNetW48(nn.Module):
             )
         ])
 
-        # Stage3 (4 modules)
+        # Stage3
 
         self.stage3 = nn.Sequential(
             HRModule([48, 96, 192]),
@@ -200,7 +260,7 @@ class HRNetW48(nn.Module):
             )
         ])
 
-        # Stage4 (3 modules)
+        # Stage4
 
         self.stage4 = nn.Sequential(
             HRModule([48, 96, 192, 384]),
@@ -208,7 +268,7 @@ class HRNetW48(nn.Module):
             HRModule([48, 96, 192, 384])
         )
 
-        # Segmentation head
+        # Head
 
         self.head = nn.Conv2d(48+96+192+384, num_classes, 1)
 
@@ -237,9 +297,9 @@ class HRNetW48(nn.Module):
         size = x_list[0].shape[2:]
 
         x0 = x_list[0]
-        x1 = F.interpolate(x_list[1], size=size, mode="bilinear")
-        x2 = F.interpolate(x_list[2], size=size, mode="bilinear")
-        x3 = F.interpolate(x_list[3], size=size, mode="bilinear")
+        x1 = F.interpolate(x_list[1], size=size, mode="bilinear", align_corners=False)
+        x2 = F.interpolate(x_list[2], size=size, mode="bilinear", align_corners=False)
+        x3 = F.interpolate(x_list[3], size=size, mode="bilinear", align_corners=False)
 
         x = torch.cat([x0, x1, x2, x3], dim=1)
 
